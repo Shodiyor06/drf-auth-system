@@ -24,5 +24,3 @@ class IsStaff(BasePermission):
 
     def has_permission(self, request, view):
         return request.user and not (request.user.is_amdin or request.user.is_manager)
-    
-    

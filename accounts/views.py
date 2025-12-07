@@ -8,9 +8,14 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 
-from .serializers import RegisterSerializer, UserSerializer, LoginSerializer, ProfileSerializer, PasswordChangeSerializer
-from .permissions import IsAdmin
-
+from .serializers import RegisterSerializer, User, UserSerializer, LoginSerializer, ProfileSerializer, PasswordChangeSerializer
+from .permissions import IsAdmin, IsManager
+from .models import Task
+from rest_framework.viewsets import ModelViewSet
+from .serializers import TaskSerializer
+from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 
 class RegisterView(APIView):
     def post(self, request: Request) -> Response:
@@ -100,3 +105,44 @@ class AdminPanelView(APIView):
     def get(self, request: Request) -> Response:
         
         return Response('xush kelibiz adminjon')
+
+class Managementview(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdmin, IsManager]
+
+    def get(self, request: Request) -> Response:
+        
+        return Response('xush kelibsiz')
+    
+
+class TaskViewSet(ModelViewSet):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['status']
+    search_fields = ['title']
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Task.objects.all()
+        return Task.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .models import Task
+
+
+class AdminStatsView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        data = {
+            "total_users": User.objects.count(),
+            "total_tasks": Task.objects.count(),
+            "done_tasks": Task.objects.filter(status='done').count(),
+            "pending_tasks": Task.objects.filter(status='pending').count(),
+        }
+        return Response(data)
+

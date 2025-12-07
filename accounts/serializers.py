@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-
+from .models import Task
 User = get_user_model()
 
 
@@ -63,4 +63,9 @@ class PasswordChangeSerializer(serializers.Serializer):
         
         return super().validate(attrs)
 
-    
+
+class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = '__all__'
+        read_only_fields = ('user',)
